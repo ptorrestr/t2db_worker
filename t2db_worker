@@ -1,0 +1,191 @@
+#!/usr/bin/python
+#change!
+import sys
+import argparse 
+import sqlite3
+import json
+import time
+import signal
+from twitter_db import sqlite_db as sqlite_twitter_db
+from twitter_db import mongo_db as mongo_twitter_db
+from time import gmtime, strftime
+from search import Search
+import api
+
+## Find the sleep time among each call of the Twitter API. This time is
+## needed for avoid twitter API rate limit.
+## Returns:
+##   tree outputs: the sleep time in each invocation of Twitter API,
+##   the rest time for the next rate limit and code error. If some error was
+##   produced in the invocation, 0 is returned, otherwise 1.
+## TODO this function is not good implemented
+def resetsleeptime(api):
+
+    try:
+        while True:
+            [hitsremaining, resettime, limit] = api.GetSearchRateLimit()
+            print("resettime = ", resettime, " time.time() = ", time.time(),
+                " hit = ", hitsremaining)
+            diff = int(resettime) - time.time()
+            if diff > 0:
+                break
+            #Sleep to give time for twitter API
+            sleep(4) 
+        sleeptime = int((int(resettime) - time.time()) / int(hitsremaining))
+        print("Sleeping", sleeptime, "seconds between API hits until",resettime)
+        return sleeptime, resettime, 1
+    except Exception as e:
+        ## Find which exceptionc could tigger this error?
+        print("Unexpected error:", sys.exc_info()[0])
+        print(str(e))
+        return 0, 0, 0
+
+## This is the core function of the program. In first step the twitter API
+## is initialised. Then, it determines the sleep time for each sucessivily 
+## call of twitter search API. Finally, the function performs the recollection
+## of tweets, using the ID of the last tweet(the largest ID of the last 
+## reccollection) as input for the next recollection. In this manner, the
+## function only collects new tweets for the given query.
+## Returns:
+##   No returns
+def main(search, db, api):
+    ## Connecto to db
+    db.connect()
+    ## Intialise search
+    db.insert_search(search)
+    
+    ## Get sleep time from API
+    [sleeptime, resettime, valid] = resetsleeptime(api)
+    time.sleep(sleeptime)
+
+    ## Main loop. Start collection of tweets
+    query_num = 1
+    lastid = 0
+    while 1:
+        try:
+            print (search.query)
+            ## Get tweets from API
+            tweets = api.GetSearch(q = search.query,
+                            since_id = lastid,
+                            count = 100)
+            ## For each tweets store in db. Find the largest
+            for tweet in tweets:
+                ## This method will save tweet in db and associated with 
+                ## current search. If the tweets is already stored, it will 
+                ## associated with current search. If the tweets is already
+                ## associated with this search, it will do nothing
+                db.insert_tweet(tweet, search)
+                ## find the largest
+                if lastid < tweet.id:
+                    lastid = tweet.id
+            strTime = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+            print("Last id = ", lastid, " query = ", query_num, " time = " 
+                    ,strTime)
+            query_num = query_num + 1
+        except Exception as err:
+            print(int(time.time()), " Error last tweet id read:", lastid)
+            print(str(err))
+        ## Sleep thread
+        time.sleep(sleeptime) 
+        if (time.time() >= resettime):
+            valid = 0
+            while valid == 0:
+                [sleeptime, resettime, valid] = resetsleeptime(api);
+    ## end connection
+    db.close()
+
+## this function controls SIGINT signal (Ctrl+C).
+def signal_handler(signal, frame):
+    print ("You pressed Ctrl+C!")
+    sys.exit(0)
+
+if __name__ == "__main__":
+    ## Start signal detection
+    signal.signal(signal.SIGINT, signal_handler)
+
+    ## Parser input arguments
+    parser = argparse.ArgumentParser()
+    # positionals
+    parser.add_argument("db",
+        help = 'The database used [sqlite3 or mongo]',
+        choices = ["sqlite", "mongo"],
+        type = str)
+    parser.add_argument('--query',
+        help='The query used to search tweets',
+        type = str,
+        required = True) 
+    # Optional
+    parser.add_argument('--search-id', 
+        help = 'The search id for collection mode',
+        required = False,
+        default = 0,
+        type = int)
+    parser.add_argument('--sqlite_file', 
+        help = 'The sqlite3 database file used to store tweets',
+        required = False,
+        default = "tweets.db",
+        type = str)
+    parser.add_argument('--sqlite_tweets_table',
+        help = 'The sqlite3 tweets table name',
+        required = False,
+        default = "tweets",
+        type = str)
+    parser.add_argument('--sqlite_searches_table',
+        help = 'The sqlite3 searches table name. This table is only needed in collection mode',
+        required = False,
+        default = "searches",
+        type = str)
+    parser.add_argument('--mongo_coll', 
+        help = 'The mongo collection used to store tweets',
+        required = False,
+        default = "tweets",
+        type = str)
+    parser.add_argument('--mongo_host',
+        help = 'The mongo server address',
+        required = False,
+        default = "localhost",
+        type = str)
+    parser.add_argument('--mongo_port',
+        help = 'The mongo server port',
+        required = False,
+        default = 27017,
+        type = int)
+    parser.add_argument('--con',
+        help = 'The consumer credential',
+        required = True,
+        type = str)
+    parser.add_argument('--con_sec',
+        help = 'The consumer secret credential',
+        required = True,
+        type = str)
+    parser.add_argument('--acc',
+        help = 'The access token credential',
+        required = True,
+        type = str)
+    parser.add_argument('--acc_sec',
+        help = 'The access token secret credential',
+        required = True,
+        type = str)
+    args = parser.parse_args()
+
+    ## Initialise twitter API
+    api = api.Api(consumer_key = args.con,
+                      consumer_secret = args.con_sec,
+                      access_token_key = args.acc,
+                      access_token_secret = args.acc_sec)
+
+    ## Create search
+    s = Search(args.search_id, args.query)
+
+    ## Start connetion with db
+    if args.db == "mongo":
+        db = mongo_twitter_db(args.mongo_host, 
+                              args.mongo_port, 
+                              args.mongo_collection)
+    elif args.db == "sqlite":
+        db = sqlite_twitter_db(args.sqlite_file, 
+                               args.sqlite_tweets_table,
+                               args.sqlite_searches_table)
+
+    ## Start program!
+    main(s, db, api)
