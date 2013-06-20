@@ -1,13 +1,9 @@
-#!/usr/bin/python
-#change!
+#!/usr/bin/env python3
 import sys
 import argparse 
-import sqlite3
-import json
-import time
 import signal
-from twitter_db import sqlite_db as sqlite_twitter_db
-from twitter_db import mongo_db as mongo_twitter_db
+from twitter_db import WebserviceDb
+import time
 from time import gmtime, strftime
 from search import Search
 import api
@@ -20,7 +16,6 @@ import api
 ##   produced in the invocation, 0 is returned, otherwise 1.
 ## TODO this function is not good implemented
 def resetsleeptime(api):
-
     try:
         while True:
             [hitsremaining, resettime, limit] = api.GetSearchRateLimit()
@@ -30,7 +25,7 @@ def resetsleeptime(api):
             if diff > 0:
                 break
             #Sleep to give time for twitter API
-            sleep(4) 
+            time.sleep(4) 
         sleeptime = int((int(resettime) - time.time()) / int(hitsremaining))
         print("Sleeping", sleeptime, "seconds between API hits until",resettime)
         return sleeptime, resettime, 1
@@ -49,10 +44,6 @@ def resetsleeptime(api):
 ## Returns:
 ##   No returns
 def main(search, db, api):
-    ## Connecto to db
-    db.connect()
-    ## Intialise search
-    db.insert_search(search)
     
     ## Get sleep time from API
     [sleeptime, resettime, valid] = resetsleeptime(api)
@@ -74,7 +65,7 @@ def main(search, db, api):
                 ## current search. If the tweets is already stored, it will 
                 ## associated with current search. If the tweets is already
                 ## associated with this search, it will do nothing
-                db.insert_tweet(tweet, search)
+                db.insertTweet(tweet, search.id)
                 ## find the largest
                 if lastid < tweet.id:
                     lastid = tweet.id
@@ -91,8 +82,6 @@ def main(search, db, api):
             valid = 0
             while valid == 0:
                 [sleeptime, resettime, valid] = resetsleeptime(api);
-    ## end connection
-    db.close()
 
 ## this function controls SIGINT signal (Ctrl+C).
 def signal_handler(signal, frame):
@@ -106,49 +95,20 @@ if __name__ == "__main__":
     ## Parser input arguments
     parser = argparse.ArgumentParser()
     # positionals
-    parser.add_argument("db",
-        help = 'The database used [sqlite3 or mongo]',
-        choices = ["sqlite", "mongo"],
-        type = str)
     parser.add_argument('--query',
         help='The query used to search tweets',
         type = str,
         required = True) 
     # Optional
+    parser.add_argument('--db-server',
+        help='The url of webservices that wrapped the DB. e.g. localhost:8000',
+        default = "http://localhost:8000",
+        type = str,
+        required = True)
     parser.add_argument('--search-id', 
         help = 'The search id for collection mode',
         required = False,
         default = 0,
-        type = int)
-    parser.add_argument('--sqlite_file', 
-        help = 'The sqlite3 database file used to store tweets',
-        required = False,
-        default = "tweets.db",
-        type = str)
-    parser.add_argument('--sqlite_tweets_table',
-        help = 'The sqlite3 tweets table name',
-        required = False,
-        default = "tweets",
-        type = str)
-    parser.add_argument('--sqlite_searches_table',
-        help = 'The sqlite3 searches table name. This table is only needed in collection mode',
-        required = False,
-        default = "searches",
-        type = str)
-    parser.add_argument('--mongo_coll', 
-        help = 'The mongo collection used to store tweets',
-        required = False,
-        default = "tweets",
-        type = str)
-    parser.add_argument('--mongo_host',
-        help = 'The mongo server address',
-        required = False,
-        default = "localhost",
-        type = str)
-    parser.add_argument('--mongo_port',
-        help = 'The mongo server port',
-        required = False,
-        default = 27017,
         type = int)
     parser.add_argument('--con',
         help = 'The consumer credential',
@@ -178,14 +138,7 @@ if __name__ == "__main__":
     s = Search(args.search_id, args.query)
 
     ## Start connetion with db
-    if args.db == "mongo":
-        db = mongo_twitter_db(args.mongo_host, 
-                              args.mongo_port, 
-                              args.mongo_collection)
-    elif args.db == "sqlite":
-        db = sqlite_twitter_db(args.sqlite_file, 
-                               args.sqlite_tweets_table,
-                               args.sqlite_searches_table)
+    db = WebserviceDb(args.db_server)
 
     ## Start program!
     main(s, db, api)

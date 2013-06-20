@@ -8,6 +8,12 @@ def toListOfTweets(tweets):
         result.append(Tweet(rawTweet))
     return result
 
+def boolToInt(bool_):
+    if (bool_):
+        return 1
+    else:
+        return 0
+
 class ApiStreaming(object):
     def __init__(self,
                     consumer_key,
@@ -72,28 +78,51 @@ class Api(object):
         return [remaining, reset, limit]
 
 class Tweet(object):
-    def __init__(self, rawTweet):
-        self.coordinates = rawTweet['coordinates']
-        self.favorited = rawTweet['favorited']
-        self.truncated = rawTweet['truncated']
-        self.created_at = rawTweet['created_at']
-        self.id_str = rawTweet['id_str']
-        self.entities = Entities(rawTweet['entities'])
-        self.in_reply_to_user_id_str = rawTweet['in_reply_to_user_id_str']
-        self.contributors = rawTweet['contributors']
-        self.text = rawTweet['text']
-        self.metadata = Metadata(rawTweet['metadata'])
-        self.retweet_count = rawTweet['retweet_count']
-        self.in_reply_to_status_id_str = rawTweet['in_reply_to_status_id_str']
+    def __init__(self, rawTweet): 
         self.id = rawTweet['id']
-        self.geo = rawTweet['geo']
-        self.retweeted = rawTweet['retweeted']
-        self.in_reply_to_user_id = rawTweet['in_reply_to_user_id']
-        self.place = rawTweet['place']
-        self.user = User(rawTweet['user'])
+        self.created_at = rawTweet['created_at']
+        self.favorited = boolToInt(rawTweet['favorited'])
+        self.text = rawTweet['text']
         self.in_reply_to_screen_name = rawTweet['in_reply_to_screen_name']
-        self.source = rawTweet['source']
+        self.in_reply_to_user_id = rawTweet['in_reply_to_user_id']
         self.in_reply_to_status_id = rawTweet['in_reply_to_status_id']
+        self.truncated = boolToInt(rawTweet['truncated'])
+        self.source = rawTweet['source']
+        self.urls = rawTweet['entities']['urls']
+        self.user_mentions = rawTweet['entities']['user_mentions']
+        self.hashtags = rawTweet['entities']['hashtags']
+        self.geo = rawTweet['geo']
+        self.place = rawTweet['place']
+        self.coordinates = rawTweet['coordinates']
+        self.contributors = rawTweet['contributors']
+        self.retweeted = boolToInt(rawTweet['retweeted'])
+        self.retweet_count = rawTweet['retweet_count']
+        self.user_id = rawTweet['user']['id']
+        self.user_name = rawTweet['user']['name']
+
+    def toHash(self):
+        args = {}
+        args['id'] = self.id 
+        args['created_at'] = self.created_at
+        args['favorited'] = self.favorited
+        args['text'] = self.text
+        args['in_reply_to_screen_name'] = self.in_reply_to_screen_name
+        args['in_reply_to_user_id'] = self.in_reply_to_user_id
+        args['in_reply_to_status_id'] = self.in_reply_to_status_id
+        args['truncated'] = self.truncated
+        args['source'] = self.source
+        args['urls'] = self.urls
+        args['user_mentions'] = self.user_mentions 
+        args['hashtags'] = self.hashtags
+        args['geo'] = self.geo
+        args['place'] = self.place
+        args['coordinates'] = self.coordinates
+        args['contributors'] = self.contributors
+        args['retweeted'] = self.retweeted
+        args['retweet_count'] = self.retweet_count
+        args['user_id'] = self.user_id
+        args['user_name'] = self.user_name
+        return args
 
 class Entities(object):
     def __init__(self, rawEntities):
