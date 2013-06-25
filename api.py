@@ -77,6 +77,7 @@ class Api(object):
         limit = limits['resources']['search']['/search/tweets']['limit']
         return [remaining, reset, limit]
 
+#TODO Get automatically data model from webservice
 class Tweet(object):
     def __init__(self, rawTweet): 
         self.id = rawTweet['id']
@@ -97,8 +98,7 @@ class Tweet(object):
         self.contributors = rawTweet['contributors']
         self.retweeted = boolToInt(rawTweet['retweeted'])
         self.retweet_count = rawTweet['retweet_count']
-        self.user_id = rawTweet['user']['id']
-        self.user_name = rawTweet['user']['name']
+        self.user = User(rawTweet['user'])
 
     def toHash(self):
         args = {}
@@ -120,8 +120,7 @@ class Tweet(object):
         args['contributors'] = self.contributors
         args['retweeted'] = self.retweeted
         args['retweet_count'] = self.retweet_count
-        args['user_id'] = self.user_id
-        args['user_name'] = self.user_name
+        args['user_id'] = self.user.id
         return args
 
 class Entities(object):
@@ -137,43 +136,65 @@ class Metadata(object):
 
 class User(object):
     def __init__(self, rawUser):
-        self.profile_sidebar_fill_color = rawUser['profile_sidebar_fill_color']
-        self.profile_sidebar_border_color = rawUser['profile_sidebar_fill_color']
-        self.profile_background_tile = rawUser['profile_background_tile']
-        self.name = rawUser['name']
-        self.profile_image_url = rawUser['profile_image_url']
+        self.id = rawUser['id']
         self.created_at = rawUser['created_at']
+        self.name = rawUser['name']
+        self.screen_name = rawUser['screen_name']
         self.location = rawUser['location']
-        self.follow_request_sent = rawUser['follow_request_sent']
+        self.description = rawUser['description']
+        self.profile_image_url = rawUser['profile_image_url']
+        self.profile_image_url_https = rawUser['profile_image_url_https']
+        self.profile_background_tile = rawUser['profile_background_tile']
+        self.profile_background_image_url = rawUser['profile_background_image_url']
+        self.profile_background_color = rawUser['profile_background_color']
+        self.profile_sidebar_fill_color = rawUser['profile_sidebar_fill_color']
+        self.profile_sidebar_border_color = rawUser['profile_sidebar_border_color']
         self.profile_link_color = rawUser['profile_link_color']
-        self.is_translator = rawUser['is_translator']
-        self.id_str = rawUser['id_str']
-        self.entities = rawUser['entities']
-        self.default_profile = rawUser['default_profile']
-        self.contributors_enabled = rawUser['contributors_enabled']
+        self.profile_text_color = rawUser['profile_text_color']
+        self.protected = rawUser['protected']
+        self.utc_offset = rawUser['utc_offset']
+        self.time_zone = rawUser['time_zone']
+        self.followers_count = rawUser['followers_count']
+        self.friends_count = rawUser['friends_count']
+        self.statuses_count = rawUser['statuses_count']
         self.favourites_count = rawUser['favourites_count']
         self.url = rawUser['url']
-        self.profile_image_url_https = rawUser['profile_image_url_https']
-        self.utc_offset = rawUser['utc_offset']
-        self.id = rawUser['id']
-        self.profile_use_background_image = rawUser['profile_use_background_image']
-        self.listed_count = rawUser['listed_count']
-        self.profile_text_color = rawUser['profile_text_color']
-        self.lang = rawUser['lang']
-        self.followers_count = rawUser['followers_count']
-        self.protected = rawUser['protected']
-        self.notifications = rawUser['notifications']
-        self.profile_background_image_url_https = rawUser['profile_background_image_url_https']
-        self.profile_background_color = rawUser['profile_background_color']
-        self.verified = rawUser['verified']
         self.geo_enabled = rawUser['geo_enabled']
-        self.time_zone = rawUser['time_zone']
-        self.description = rawUser['description']
-        self.default_profile_image = rawUser['default_profile_image']
-        self.profile_background_image_url = rawUser['profile_background_image_url']
-        self.statuses_count = rawUser['statuses_count']
-        self.friends_count = rawUser['friends_count']
-        self.following = rawUser['following']
-        #self.show_all_inline_media = rawUser['show_all_inline_media']
-        self.screen_name = rawUser['screen_name']
+        self.verified = rawUser['verified']
+        self.lang = rawUser['lang']
+        self.notifications = rawUser['notifications']
+        self.contributors_enabled = rawUser['contributors_enabled']
+        self.listed_count = rawUser['listed_count']
 
+    def toHash(self):
+        args = {}
+        args['id'] = self.id
+        args['created_at'] = self.created_at
+        args['name'] = self.name
+        args['screen_name'] = self.screen_name
+        args['location'] = self.location
+        args['description'] = self.description
+        args['profile_image_url'] = self.profile_image_url
+        args['profile_image_url_https'] = self.profile_image_url_https
+        args['profile_background_tile'] = boolToInt(self.profile_background_tile)
+        args['profile_background_image_url'] = self.profile_background_image_url
+        args['profile_background_color'] = self.profile_background_color
+        args['profile_sidebar_fill_color'] = self.profile_sidebar_fill_color
+        args['profile_sidebar_border_color'] = self.profile_sidebar_border_color
+        args['profile_link_color'] = self.profile_link_color
+        args['profile_text_color'] = self.profile_text_color
+        args['protected'] = boolToInt(self.protected)
+        args['utc_offset'] = self.utc_offset
+        args['time_zone'] = self.time_zone
+        args['followers_count'] = self.followers_count
+        args['friends_count'] = self.friends_count
+        args['statuses_count'] = self.statuses_count
+        args['favourites_count'] = self.favourites_count
+        args['url'] = self.url
+        args['geo_enabled'] = boolToInt(self.geo_enabled)
+        args['verified'] = boolToInt(self.verified)
+        args['lang'] = self.lang
+        args['notifications'] = boolToInt(self.notifications)
+        args['contributors_enabled'] = boolToInt(self.contributors_enabled)
+        args['listed_count'] = self.listed_count
+        return args
