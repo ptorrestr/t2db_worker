@@ -9,30 +9,31 @@ class Webservice(object):
         self.urlInsertTweet = urlbase + "/tweets.json"
         self.urlInsertTweetSearch = urlbase + "/tweetsearches.json"
         self.urlInsertUser = urlbase + "/users.json"
+        self.auth = ('quiltro', 'perroCallejero')
 
     def postUser(self, user):
         data = user.toHash()
-        r = requests.post(self.urlInsertUser, data)
+        r = requests.post(self.urlInsertUser, data, auth = self.auth)
         if r.status_code != 201:
             raise Exception("Post user failed, status code = " +
                                 str(r.status_code) + ", message = " + r.text)
 
     def postTweet(self, tweet):
         data = tweet.toHash()
-        r = requests.post(self.urlInsertTweet, data)
+        r = requests.post(self.urlInsertTweet, data, auth = self.auth)
         if r.status_code != 201:
             raise Exception("Post tweet failed, status code = " +
                                 str(r.status_code) + ", message = " + r.text)
     
     def postTweetSearch(self, tweet, search_id):
         data = { "tweet_id":  tweet.id , "search_id": search_id }
-        r = requests.post(self.urlInsertTweetSearch, data)
+        r = requests.post(self.urlInsertTweetSearch, data, auth = self.auth)
         if r.status_code != 201:
             raise Exception("Post tweet_search failed, " + "status code = " + str(r.status_code) + ", message = " + r.text)
 
     def headUser(self, user):
         url = self.urlbase + "/users/" + str(user.id) + ".json"
-        r = requests.head(url)
+        r = requests.head(url, auth = self.auth)
         if r.status_code == 200:
             return True
         elif r.status_code == 404:
@@ -43,7 +44,7 @@ class Webservice(object):
 
     def headTweet(self, tweet):
         url = self.urlbase + "/tweets/" + str(tweet.id) + ".json"
-        r = requests.head(url)
+        r = requests.head(url, auth = self.auth)
         if r.status_code == 200:
             return True
         elif r.status_code == 404:
@@ -54,7 +55,7 @@ class Webservice(object):
 
     def getTweetSearchParams(self, tweet, search_id):
         url = self.urlbase + "/tweetsearches.json?search_id=" + str(search_id) + "&tweet_id=" + str(tweet.id)
-        r = requests.get(url)
+        r = requests.get(url, auth = self.auth)
         if r.status_code == 200:
             if not r.text == "[]":
                 return True
