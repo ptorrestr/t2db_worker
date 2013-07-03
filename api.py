@@ -120,7 +120,7 @@ class Tweet(object):
         args['contributors'] = self.contributors
         args['retweeted'] = self.retweeted
         args['retweet_count'] = self.retweet_count
-        args['user_id'] = self.user.id
+        args['user'] = self.user.id
         return args
 
 class Entities(object):

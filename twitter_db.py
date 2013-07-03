@@ -26,7 +26,7 @@ class Webservice(object):
                                 str(r.status_code) + ", message = " + r.text)
     
     def postTweetSearch(self, tweet, search_id):
-        data = { "tweet_id":  tweet.id , "search_id": search_id }
+        data = { "tweet":  tweet.id , "search": search_id }
         r = requests.post(self.urlInsertTweetSearch, data, auth = self.auth)
         if r.status_code != 201:
             raise Exception("Post tweet_search failed, " + "status code = " + str(r.status_code) + ", message = " + r.text)
