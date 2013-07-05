@@ -8,6 +8,18 @@ from time import gmtime, strftime
 from search import Search
 import api
 
+## Use streaming API.
+def mainStreaming(search, db, streaming):
+    try:
+        tweetsIter = streaming.GetStream(track = search.query)
+        for rawTweet in tweetsIter:
+            tweet = api.toPlainTweet(rawTweet)
+            db.insertTweet(tweet, search.id)
+            lastid = tweet.id
+    except Exception as err:
+        print(int(time.time()), " Error, last tweet id read:", lastid)
+        print(str(err))
+
 ## Find the sleep time among each call of the Twitter API. This time is
 ## needed for avoid twitter API rate limit.
 ## Returns:
@@ -43,7 +55,7 @@ def resetsleeptime(api):
 ## function only collects new tweets for the given query.
 ## Returns:
 ##   No returns
-def main(search, db, api):
+def mainSearch(search, db, api):
     
     ## Get sleep time from API
     [sleeptime, resettime, valid] = resetsleeptime(api)
@@ -74,7 +86,7 @@ def main(search, db, api):
                     ,strTime)
             query_num = query_num + 1
         except Exception as err:
-            print(int(time.time()), " Error last tweet id read:", lastid)
+            print(int(time.time()), " Error last tweet, id read:", lastid)
             print(str(err))
         ## Sleep thread
         time.sleep(sleeptime) 
@@ -82,6 +94,12 @@ def main(search, db, api):
             valid = 0
             while valid == 0:
                 [sleeptime, resettime, valid] = resetsleeptime(api);
+
+def main(search, db, api_):
+    if isinstance(api_, api.Api):
+        mainSearch(search, db, api_)
+    else:
+        mainStreaming(search, db, api_)
 
 ## this function controls SIGINT signal (Ctrl+C).
 def signal_handler(signal, frame):
@@ -98,7 +116,11 @@ if __name__ == "__main__":
     parser.add_argument('--query',
         help='The query used to search tweets',
         type = str,
-        required = True) 
+        required = True)
+    parser.add_argument('--api',
+        help = 'The twitter api used',
+        choices = ['historical', 'search', 'streaming'],
+        required = True)
     # Optional
     parser.add_argument('--db-server',
         help='The url of webservices that wrapped the DB. e.g. localhost:8000',
@@ -128,17 +150,27 @@ if __name__ == "__main__":
         type = str)
     args = parser.parse_args()
 
-    ## Initialise twitter API
-    api = api.Api(consumer_key = args.con,
-                      consumer_secret = args.con_sec,
-                      access_token_key = args.acc,
-                      access_token_secret = args.acc_sec)
-
     ## Create search
     s = Search(args.search_id, args.query)
 
     ## Start connetion with db
     db = WebserviceDb(args.db_server)
 
+    ## Initialise twitter API
+    if args.api == "search":
+        api_ = api.Api(consumer_key = args.con,
+                      consumer_secret = args.con_sec,
+                      access_token_key = args.acc,
+                      access_token_secret = args.acc_sec)
+    elif args.api == "historical":
+        api_ = api.Api(consumer_key = args.con,
+                      consumer_secret = args.con_sec,
+                      access_token_key = args.acc,
+                      access_token_secret = args.acc_sec)
+    else:
+        api_ = api.ApiStreaming(consumer_key = args.con,
+                      consumer_secret = args.con_sec,
+                      access_token_key = args.acc,
+                      access_token_secret = args.acc_sec)
     ## Start program!
-    main(s, db, api)
+    main(s, db, api_)

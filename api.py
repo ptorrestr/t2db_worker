@@ -8,6 +8,9 @@ def toListOfTweets(tweets):
         result.append(Tweet(rawTweet))
     return result
 
+def toPlainTweet(rawTweet):
+    return Tweet(rawTweet)
+
 def boolToInt(bool_):
     if (bool_):
         return 1
