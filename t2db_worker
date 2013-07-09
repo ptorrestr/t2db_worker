@@ -2,7 +2,8 @@
 import sys
 import argparse 
 import signal
-from twitter_db import WebserviceDb
+from twitter_db import WebserviceDbStreaming
+from twitter_db import WebserviceDbSearch
 import time
 from time import gmtime, strftime
 from search import Search
@@ -55,7 +56,7 @@ def resetsleeptime(api):
 ## function only collects new tweets for the given query.
 ## Returns:
 ##   No returns
-def mainSearch(search, db, api):
+def mainSearchFuture(search, db, api):
     
     ## Get sleep time from API
     [sleeptime, resettime, valid] = resetsleeptime(api)
@@ -95,8 +96,55 @@ def mainSearch(search, db, api):
             while valid == 0:
                 [sleeptime, resettime, valid] = resetsleeptime(api);
 
+
+def mainSearch(search, db, api):
+    
+    ## Get sleep time from API
+    [sleeptime, resettime, valid] = resetsleeptime(api)
+    time.sleep(sleeptime)
+
+    ## Main loop. Start collection of tweets
+    query_num = 1
+    lastid = 0
+    first = True
+    while 1:
+        try:
+            print (search.query)
+            ## Get tweets from API
+            tweets = api.GetSearch(q = search.query,
+                            max_id = lastid,
+                            count = 100)
+            ## For each tweets store in db. Find the least ID
+            for tweet in tweets:
+                ## This method will save tweet in db and associated with 
+                ## current search. If the tweets is already stored, it will 
+                ## associated with current search. If the tweets is already
+                ## associated with this search, it will do nothing
+                db.insertTweet(tweet, search.id)
+                ## find the least
+                if lastid > tweet.id:
+                    lastid = tweet.id
+                elif first:
+                    lastid = tweet.id
+                    first = False
+            strTime = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+            print("Last id = ", lastid, " query = ", query_num, " time = " 
+                    ,strTime)
+            query_num = query_num + 1
+        except Exception as err:
+            print(int(time.time()), " Error last tweet, id read:", lastid)
+            print(str(err))
+        ## Sleep thread
+        time.sleep(sleeptime) 
+        if (time.time() >= resettime):
+            valid = 0
+            while valid == 0:
+                [sleeptime, resettime, valid] = resetsleeptime(api);
+
 def main(search, db, api_):
-    if isinstance(api_, api.Api):
+    if isinstance(api_, api.ApiSearchFuture):
+        mainSearchFuture(search, db, api_)
+    elif isinstance(api_, api.ApiSearch):
         mainSearch(search, db, api_)
     else:
         mainStreaming(search, db, api_)
@@ -119,7 +167,7 @@ if __name__ == "__main__":
         required = True)
     parser.add_argument('--api',
         help = 'The twitter api used',
-        choices = ['historical', 'search', 'streaming'],
+        choices = ['search', 'streaming'],
         required = True)
     # Optional
     parser.add_argument('--db-server',
@@ -153,24 +201,27 @@ if __name__ == "__main__":
     ## Create search
     s = Search(args.search_id, args.query)
 
-    ## Start connetion with db
-    db = WebserviceDb(args.db_server)
-
     ## Initialise twitter API
     if args.api == "search":
-        api_ = api.Api(consumer_key = args.con,
+        api_ = api.ApiSearch(consumer_key = args.con,
                       consumer_secret = args.con_sec,
                       access_token_key = args.acc,
                       access_token_secret = args.acc_sec)
-    elif args.api == "historical":
-        api_ = api.Api(consumer_key = args.con,
+        ## Start connetion with db
+        db = WebserviceDbSearch(args.db_server)
+    elif args.api == "searchFuture":
+        api_ = api.ApiHistorical(consumer_key = args.con,
                       consumer_secret = args.con_sec,
                       access_token_key = args.acc,
                       access_token_secret = args.acc_sec)
+        ## Start connetion with db
+        db = WebserviceDbSearch(args.db_server)
     else:
         api_ = api.ApiStreaming(consumer_key = args.con,
                       consumer_secret = args.con_sec,
                       access_token_key = args.acc,
                       access_token_secret = args.acc_sec)
+        ## Start connetion with db
+        db = WebserviceDbStreaming(args.db_server)
     ## Start program!
     main(s, db, api_)
