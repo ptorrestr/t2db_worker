@@ -1,1 +1,47 @@
-v0.1, 2013-09-25 -- Initial release
+commit 13a283b6fd80195b15b6f29c325ab46d944d32ed
+Author: Pablo Torres <pablo.torres@deri.org>
+Date:   Mon Sep 30 13:41:29 2013 +0100
+
+    new version 0.2.0: Full support for external buffering, Local buffering, unittest aded
+
+commit 2048ccd03f6af262d0f22a27a66bd157684ca199
+Author: Pablo Torres <pablo.torres.t@gmail.com>
+Date:   Tue Jul 9 11:50:37 2013 +0100
+
+    new streaming model
+
+commit 01baed82d042bd77f9f580bab4b919bf4b01f727
+Author: Pablo Torres <pablo.torres.t@gmail.com>
+Date:   Fri Jul 5 11:19:38 2013 +0100
+
+    add historical option
+
+commit cf1696b05072e6660c94f4ca216bcdcb907bfa81
+Author: Pablo Torres <pablo.torres.t@gmail.com>
+Date:   Wed Jul 3 09:20:33 2013 +0100
+
+    support new datamodel
+
+commit c7b8ffa2dcb5fa2f859b43aa3ba838148de92c45
+Author: Pablo Torres <pablo.torres.t@gmail.com>
+Date:   Thu Jun 27 14:41:42 2013 +0100
+
+    add first password to webservice
+
+commit f8696d587be6048dbffeaa6c6c11bd30c636f8ce
+Author: Pablo Torres <pablo.torres.t@gmail.com>
+Date:   Tue Jun 25 16:47:32 2013 +0100
+
+    save twitter user data
+
+commit a7ad68962cdc8debe7e89fcd471f9e8816833ebf
+Author: Pablo Torres <pablo.torres.t@gmail.com>
+Date:   Thu Jun 20 12:36:37 2013 +0100
+
+    change database to webservice
+
+commit 9d4c3c898d4aed6cf69c02eab6e886d5ddf993c3
+Author: Pablo Torres <pablo.torres.t@gmail.com>
+Date:   Mon Jun 17 14:16:52 2013 +0100
+
+    First commit
