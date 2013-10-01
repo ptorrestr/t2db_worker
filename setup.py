@@ -6,7 +6,7 @@ def readme():
 
 setup(
     name='t2db_worker',
-    version='0.2.0',
+    version='0.2.1',
     description='Worker for t2db',
     long_description = readme(),
     classifiers=[

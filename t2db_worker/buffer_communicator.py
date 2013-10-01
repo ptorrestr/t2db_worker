@@ -62,11 +62,7 @@ class LocalBuffer(object):
         self.userList.append(user)
 
     # Check if the tweetStream exist in the list and add it
-    def addTweetStreaming(self, tweetId, streamingId):
-        rawTweetStreaming = {}
-        rawTweetStreaming["tweet"] = tweetId
-        rawTweetStreaming["streaming"] = streamingId
-        tweetStreaming = objects.TweetStreaming(rawTweetStreaming)
+    def addTweetStreaming(self, tweetStreaming):
         basicList = self.tweetStreamingList.getList()
         for oldTweetStreaming in basicList:
             if (tweetStreaming.tweet == oldTweetStreaming.tweet and
@@ -75,11 +71,7 @@ class LocalBuffer(object):
         self.tweetStreamingList.append(tweetStreaming)
 
     # Check if the tweetSearch exist in the list and add it
-    def addTweetSearch(self, tweetId, searchId):
-        rawTweetSearch = {}
-        rawTweetSearch["tweet"] = tweetId
-        rawTweetSearch["search"] = searchId
-        tweetSearch = objects.TweetSearch(rawTweetSearch)
+    def addTweetSearch(self, tweetSearch):
         basicList = self.tweetSearchList.getList()
         for oldTweetSearch in basicList:
             if (tweetSearch.tweet == oldTweetSearch.tweet and
@@ -158,9 +150,17 @@ class Buffer(object):
             self.localBuffer.addTweet(tweet)
             self.localBuffer.addUser(user)
             if streamingId is not None:
-                self.localBuffer.addTweetStreaming(tweet.id, streamingId)
+                rawTweetStreaming = {}
+                rawTweetStreaming["tweet"] = tweet.id
+                rawTweetStreaming["streaming"] = streamingId
+                tweetStreaming = objects.TweetStreaming(rawTweetStreaming)
+                self.localBuffer.addTweetStreaming(tweetStreaming)
             if searchId is not None:
-                self.localBuffer.addTweetSearch(tweet.id, searchId)
+                rawTweetSearch = {}
+                rawTweetSearch["tweet"] = tweet.id
+                rawTweetSearch["search"] = searchId
+                tweetSearch = objects.TweetSearch(rawTweetSearch)
+                self.localBuffer.addTweetSearch(tweetSearch)
         except Exception as e:
             print("Warning: " + str(e))
         self.bufferLock.release()

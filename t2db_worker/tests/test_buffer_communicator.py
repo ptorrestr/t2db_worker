@@ -12,6 +12,11 @@ from t2db_worker.buffer_communicator import Buffer
 from t2db_worker.parser import ParserStatus
 from t2db_worker.tests.test_parser import getOneStatus
 
+from t2db_objects.objects import TweetStreaming
+from t2db_objects.objects import TweetSearch
+from t2db_objects.tests.common import randomTweetStreaming
+from t2db_objects.tests.common import randomTweetSearch
+
 status = None
 
 class TestStatus2Object(unittest.TestCase):
@@ -64,23 +69,23 @@ class TestLocalBuffer(unittest.TestCase):
 
     def test_addTweetStreaming(self):
         lb = LocalBuffer()
-        lb.addTweetStreaming(1, 1)
+        lb.addTweetStreaming(TweetStreaming(randomTweetStreaming(1, 1)))
         self.assertEqual(len(lb.tweetStreamingList.getList()), 1)
 
     def test_addRepeatedTweetStreaming(self):
         lb = LocalBuffer()
-        lb.addTweetStreaming(1, 1)
-        self.assertRaises(Exception, lb.addTweetStreaming, [1, 1])
+        lb.addTweetStreaming(TweetStreaming(randomTweetStreaming(1, 1)))
+        self.assertRaises(Exception, lb.addTweetStreaming, [TweetStreaming(randomTweetStreaming(1, 1)),])
 
     def test_addTweetSearch(self):
         lb = LocalBuffer()
-        lb.addTweetSearch(1, 1)
+        lb.addTweetSearch(TweetSearch(randomTweetSearch(1, 1)))
         self.assertEqual(len(lb.tweetSearchList.getList()), 1)
 
     def test_addRepeatedTweetSearch(self):
         lb = LocalBuffer()
-        lb.addTweetSearch(1, 1)
-        self.assertRaises(Exception, lb.addTweetSearch, [1, 1])
+        lb.addTweetSearch(TweetSearch(randomTweetSearch(1, 1)))
+        self.assertRaises(Exception, lb.addTweetSearch, [TweetSearch(randomTweetSearch(1, 1)),])
         
 
 class TestBuffer(unittest.TestCase):
