@@ -1,3 +1,21 @@
+commit cd3bfe315d595fc9a6a86f4b1bb57e959146022b
+Author: Pablo Torres <pablo.torres@deri.org>
+Date:   Sat Oct 5 14:21:48 2013 +0100
+
+    logger added
+
+commit a4dec6235f612e7f134f1bc7d3bf8ef72907119e
+Author: Pablo Torres <pablo.torres@deri.org>
+Date:   Tue Oct 1 11:32:24 2013 +0100
+
+    new feature: LocalBuffer has now standard interfaces
+
+commit bac866310e3ac8696bbcfad397d6ef4f07faad48
+Author: Pablo Torres <pablo.torres@deri.org>
+Date:   Mon Sep 30 13:42:34 2013 +0100
+
+    updated CHANGES
+
 commit 13a283b6fd80195b15b6f29c325ab46d944d32ed
 Author: Pablo Torres <pablo.torres@deri.org>
 Date:   Mon Sep 30 13:41:29 2013 +0100
