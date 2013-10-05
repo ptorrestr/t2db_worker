@@ -1,8 +1,9 @@
-#!/usr/bin/env python3
 import sys
 import argparse 
 import signal
 import time
+import logging
+
 from time import gmtime, strftime
 from threading import Event
 from threading import Barrier
@@ -10,6 +11,19 @@ from threading import Barrier
 from t2db_worker.search import Search
 from t2db_worker import api
 from t2db_worker import buffer_communicator as bc
+
+# create logger
+logger = logging.getLogger('Worker')
+logger.setLevel(logging.DEBUG)
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+# create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# add formatter to ch
+ch.setFormatter(formatter)
+# add ch to logger
+logger.addHandler(ch)
 
 ## Use streaming API.
 def streaming(search, streaming, bf, stopEvent, barrier):
@@ -20,17 +34,17 @@ def streaming(search, streaming, bf, stopEvent, barrier):
         tweetsIter = streaming.getStream(track = search.query)
         for rawTweet in tweetsIter:
             if stopEvent.isSet():
-                print("Stoping streaming")
+                logger.info("Stoping streaming")
                 break
             bf.insertTweetStreaming(rawTweet, search.id)
             lastid = rawTweet["id"]
     except Exception as err:
-        print(int(time.time()), " Error, last tweet id read")
-        print(str(err))
+        logger.error(str(err))
+        logger.debug("Last tweet id read = " + str(lastid))
     # Stop timer thread in buffer
     bf.stopTimer()
     barrier.wait()
-    print("Streaming stoped")
+    logger.info("Streaming stoped")
 
 ## This is the core function of the program. In first step the twitter API
 ## is initialised. Then, it determines the sleep time for each sucessivily 
@@ -48,7 +62,7 @@ def searchFuture(search, api, bf, stopEvent, barrier):
     while True:
         try:
             if  stopEvent.isSet():
-                print("Stoping search")
+                logger.info("Stoping search")
                 break
             ## Get tweets from API
             tweets = api.getSearch(q = search.query, since_id = lastid, 
@@ -64,17 +78,16 @@ def searchFuture(search, api, bf, stopEvent, barrier):
                     ## find the largest
                     if lastid < tweet["id"]:
                         lastid = tweet["id"]
-            strTime = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
-            print("Last id = ", lastid, " query = ", query_num, " time = " 
-                    ,strTime)
+            logger.debug("Last tweet.id = " + str(lastid) + ", query num = " 
+                + str(query_num))
             query_num += 1
         except Exception as err:
-            print(int(time.time()), " Error last tweet, id read:", lastid)
-            print(str(err))
+            logger.error(str(err))
+            logger.debug("Last tweet id read = " + str(lastid))
     # Stop timer thread in buffer
     bf.stopTimer()
     barrier.wait()
-    print("Searching stoped")
+    logger.info("Searching stoped")
 
 
 def searchHistorical(search, api, bf, stopEvent, barrier):
@@ -86,7 +99,7 @@ def searchHistorical(search, api, bf, stopEvent, barrier):
     while True:
         try:
             if  stopEvent.isSet():
-                print("Stoping search")
+                logger.info("StopEvent occurs!")
                 break
             ## Get tweets from API
             tweets = api.getSearch(q = search.query, max_id = lastid, 
@@ -105,17 +118,17 @@ def searchHistorical(search, api, bf, stopEvent, barrier):
                     elif first:
                         lastid = tweet["id"]
                         first = False
-            strTime = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
-            print("Last id = ", lastid, " query = ", query_num, " time = " 
-                    ,strTime)
+            logger.debug("Last id = " + str(lastid) + " query = " + str(query_num))
             query_num = query_num + 1
         except Exception as err:
-            print(int(time.time()), " Error last tweet, id read:", lastid)
-            print(str(err))
+            logger.error(str(err))
+            logger.debug("Last tweet id read = " + str(lastid))
     # Stop timer thread in buffer)
+    logger.debug("Stoping timer")
     bf.stopTimer()
+    logger.debug("Waiting in barrier: " + str(barrier))
     barrier.wait()
-    print("Searching stoped")
+    logger.info("Searching stoped")
 
 # Global variables for signal_handler function
 gStopEvent = None
@@ -135,8 +148,10 @@ def signal_handler(signal, frame):
     global gStopEvent
     global gBarrier
     global gFinalise
-    print ("You pressed Ctrl+C!, stoping")
+    logger.info ("You pressed Ctrl+C!, stoping")
     gStopEvent.set()
+    logger.info ("StopEvent triggered")
+    logger.debug("Waiting in barrier: " + str(barrier))
     gBarrier.wait()
     if gFinalise:
         sys.exit(0)
@@ -231,8 +246,8 @@ def main():
         elif args.api == "streaming":
             streaming(s, api_, bf, stopEvent, barrier)
     except Exception as e:
-        print("Program end unexpectely: " + str(e))
+        logger.error("Program end unexpectely: " + str(e))
         sys.exit(2)
-
+    logger.error("Program ended!")
     ## End program!
     sys.exit(0)

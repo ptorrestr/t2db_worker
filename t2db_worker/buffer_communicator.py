@@ -1,4 +1,5 @@
 import time
+import logging
 
 from threading import Lock
 from threading import Thread
@@ -6,10 +7,21 @@ from threading import Timer
 
 from t2db_objects import objects
 from t2db_objects import psocket
-
 from t2db_worker import parser 
-
 from t2db_objects.objects import encodeObject
+
+# create logger
+logger = logging.getLogger('Buffer_Comm')
+logger.setLevel(logging.DEBUG)
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+# create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# add formatter to ch
+ch.setFormatter(formatter)
+# add ch to logger
+logger.addHandler(ch)
 
 # Send data to buffer
 class BufferCommunicator(object):
@@ -24,17 +36,37 @@ class BufferCommunicator(object):
             try:
                 sock = psocket.SocketClient(self.host
                         , self.port).getSocketControl()
-                try:
-                    sock.sendObject(tweetList)
-                    sock.sendObject(userList)
-                    sock.sendObject(tweetStreamingList)
-                    sock.sendObject(tweetSearchList)
-                except Exception as e:
-                    print("Error: " + str(e))
-                finally:
-                    sock.close()
             except Exception as e:
-                print("Error: " + str(e))
+                logger.error(str(e))
+                return
+
+            try:
+                sock.sendObject(tweetList)
+            except Exception as e:
+                logger.error(str(e))
+            finally:
+                logger.debug("Sent tweets = " + str(len(tweetList.list)))
+            try:
+                sock.sendObject(userList)
+            except Exception as e:
+                logger.error(str(e))
+            finally:
+                logger.debug("Sent users = " + str(len(userList.list)))
+            try:
+                sock.sendObject(tweetStreamingList)
+            except Exception as e:
+                logger.error(str(e))
+            finally:
+                logger.debug("Sent tweetStreamings = " + 
+                    str(len(tweetStreamingList.list)))
+            try:
+                sock.sendObject(tweetSearchList)
+            except Exception as e:
+                logger.error(str(e))
+            finally:
+                logger.debug("Sent tweetSearches = " + 
+                    str(len(tweetSearchList.list)))
+                sock.close()
 
 # Store data produced by worker in local memory.
 class LocalBuffer(object):
@@ -50,7 +82,8 @@ class LocalBuffer(object):
         basicList = self.tweetList.getList()
         for oldTweet in basicList:
             if tweet.id == oldTweet.id :
-                raise Exception("The tweet already exists in the list")
+                raise Exception("The tweet(id=" +str(tweet.id) + 
+                        ") already exists in the list")
         self.tweetList.append(tweet)
 
     # Check if the user exist in the list and add it
@@ -58,7 +91,8 @@ class LocalBuffer(object):
         basicList = self.userList.getList()
         for oldUser in basicList:
             if user.id == oldUser.id :
-                raise Exception("The user already exists in the list")
+                raise Exception("The user(id=" + str(user.id) + 
+                        ") already exists in the list")
         self.userList.append(user)
 
     # Check if the tweetStream exist in the list and add it
@@ -67,7 +101,10 @@ class LocalBuffer(object):
         for oldTweetStreaming in basicList:
             if (tweetStreaming.tweet == oldTweetStreaming.tweet and
                 tweetStreaming.streaming == oldTweetStreaming.streaming):
-                raise Exception("The tweetStreaming already exists in the list")
+                raise Exception("The tweetStreaming(tweet.id=" + 
+                    str(tweetStreaming.tweet) + ", streaming.id = " + 
+                    str(tweetStreaming.streaming) + 
+                    ") already exists in the list")
         self.tweetStreamingList.append(tweetStreaming)
 
     # Check if the tweetSearch exist in the list and add it
@@ -76,7 +113,10 @@ class LocalBuffer(object):
         for oldTweetSearch in basicList:
             if (tweetSearch.tweet == oldTweetSearch.tweet and
                 tweetSearch.search == oldTweetSearch.search):
-                raise Exception("The tweetSearch already exists in the list")
+                raise Exception("The tweetSearch(tweet.id=" + 
+                    str(tweetStreaming.tweet) + ", streaming.id = " + 
+                    str(tweetSearch.search) + 
+                    ") already exists in the list")
         self.tweetSearchList.append(tweetSearch)
 
 # Send data to global buffer if tweet list has reached maxsize
@@ -162,7 +202,7 @@ class Buffer(object):
                 tweetSearch = objects.TweetSearch(rawTweetSearch)
                 self.localBuffer.addTweetSearch(tweetSearch)
         except Exception as e:
-            print("Warning: " + str(e))
+            logger.warn("Warning: " + str(e))
         self.bufferLock.release()
         # Verify maxsize condition for buffer
         counter(self.maxsize, self, self.bufferCommunicator)

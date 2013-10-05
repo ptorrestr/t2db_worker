@@ -160,6 +160,3 @@ class TestMain(unittest.TestCase):
         fakeSignal(stopEvent, barrier) 
         # Wait for data in sharedList
         sharedListLock.acquire()
-
-if __name__ == '__main__':
-    unittest.main()   

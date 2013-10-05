@@ -18,7 +18,7 @@ setup(
     license='GNU',
     packages=['t2db_worker', 't2db_worker.tests'],
     install_requires=[
-        't2db_objects >= 0.4.2',
+        't2db_objects >= 0.5.0',
 	'twitter >= 1.10.0',
     ],
     entry_points = {
